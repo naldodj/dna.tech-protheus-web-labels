@@ -1,0 +1,132 @@
+#include "totvs.ch"
+
+/*/{Protheus.doc} U_DNWPROBE
+
+Diagnostica como TWebEngine resolve um recurso publicado por CpyF2Web.
+O resultado esperado e HTTP 200 somente para ./nome-do-arquivo.svg.
+
+@type User Function
+/*/
+function U_DNWPROBE()
+
+    local cStamp:=DToS(Date())+StrTran(Time(),":","") as character
+    local cName:="dnatech_cpyf2web_probe_"+cStamp as character
+    local cPath:="\system\dnatech-web-labels\" as character
+    local cHTMLFile:=cPath+cName+".html" as character
+    local cSVGFile:=cPath+cName+".svg" as character
+    local cHTMLWeb:="" as character
+    local cSVGWeb:="" as character
+    local cHTML:="" as character
+    local cSVG:="" as character
+    local cChannelJS:=GetApoRes("twebchannel.js") as character
+    local oDlg as object
+    local oChannel as object
+    local oEngine as object
+
+    FWMakeDir(cPath,.F.)
+
+    BeginContent var cSVG
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="180" viewBox="0 0 600 180">
+  <rect width="600" height="180" rx="16" fill="#101820"/>
+  <circle cx="90" cy="90" r="52" fill="#21b8d5"/>
+  <text x="165" y="82" fill="#fff" font-family="Arial" font-size="28" font-weight="700">CpyF2Web funcionando</text>
+  <text x="165" y="120" fill="#9fdce7" font-family="Arial" font-size="18">Recurso relativo ao HTML</text>
+</svg>
+    EndContent
+
+    if ((!MemoWrite(cSVGFile,cSVG)).or.(Empty(cChannelJS)))
+        MsgStop("Nao foi possivel preparar o mock ou twebchannel.js nao esta no RPO.","DNATech")
+        return(nil)
+    endif
+
+    cSVGWeb:=CpyF2Web(cSVGFile,.F.,.F.,.F.,.F.)
+    if (Empty(cSVGWeb))
+        MsgStop("CpyF2Web nao publicou o SVG.","DNATech")
+        return(nil)
+    endif
+
+    BeginContent var cHTML
+<!doctype html>
+<html><head><meta charset="windows-1252"><title>CpyF2Web Probe</title>
+<script>__CHANNEL__</script>
+<style>
+body{margin:0;padding:24px;background:#101820;color:#eaf2f5;font:14px Consolas,monospace}
+h1{font:700 25px Arial}.box{background:#182630;border:1px solid #37505d;border-radius:8px;padding:14px;margin:12px 0}
+.ok{color:#72dc91}.fail{color:#ff8b8b}.url{word-break:break-all;color:#a9dce7}button{padding:8px 16px}
+</style></head><body>
+<h1>CpyF2Web + TWebEngine</h1><div id="env" class="box"></div><div id="result" class="box">Testando...</div>
+<div id="preview" class="box"></div><button onclick="closeProbe()">Fechar</button>
+<script>
+const raw='__RAW__', file='__FILE__';
+function esc(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+async function run(){
+  document.getElementById('env').innerHTML='<b>href:</b> <span class="url">'+esc(location.href)+'</span><br>'+ 
+    '<b>baseURI:</b> <span class="url">'+esc(document.baseURI)+'</span><br><b>CpyF2Web:</b> <span class="url">'+esc(raw)+'</span>';
+  const clean=new URL(document.baseURI); clean.search=''; clean.hash='';
+  const tests=[['retorno bruto',raw],['resolvido pelo baseURI',new URL(raw,document.baseURI).href],
+    ['arquivo relativo ao HTML',new URL('./'+file,clean).href]];
+  const out=[]; let preview='';
+  for(const item of tests){try{const r=await fetch(item[1],{cache:'no-store'});const t=await r.text();
+    const ok=r.ok&&t.includes('<svg');out.push({name:item[0],url:item[1],status:r.status,ok});if(ok&&!preview)preview=t;
+  }catch(e){out.push({name:item[0],url:item[1],status:0,ok:false,error:e.message});}}
+  document.getElementById('result').innerHTML=out.map(x=>'<p class="'+(x.ok?'ok':'fail')+'">'+
+    (x.ok?'OK':'FALHA')+' · '+esc(x.name)+' · HTTP '+x.status+'<br><span class="url">'+esc(x.url)+'</span></p>').join('');
+  if(preview)document.getElementById('preview').innerHTML=preview;
+  twebchannel.jsToAdvpl('DNW_PROBE_RESULT',JSON.stringify(out));
+}
+function closeProbe(){twebchannel.jsToAdvpl('DNW_PROBE_CLOSE','')}
+twebchannel.connect(run);
+</script></body></html>
+    EndContent
+
+    cHTML:=StrTran(cHTML,"__CHANNEL__",cChannelJS)
+    cHTML:=StrTran(cHTML,"__RAW__",DNWJSEscape(cSVGWeb))
+    cHTML:=StrTran(cHTML,"__FILE__",DNWJSEscape(cName+".svg"))
+    if (!MemoWrite(cHTMLFile,cHTML))
+        MsgStop("Nao foi possivel criar o HTML.","DNATech")
+        return(nil)
+    endif
+    cHTMLWeb:=CpyF2Web(cHTMLFile,.F.,.F.,.F.,.F.)
+
+    oChannel:=TWebChannel():New()
+    oChannel:bJSToAdvPL:={|o,cType,cData|DNWProbeCB(@oDlg,cType,cData)}
+    oChannel:Connect()
+    if ((!oChannel:lConnected).or.(Empty(cHTMLWeb)))
+        MsgStop("Nao foi possivel iniciar TWebChannel/TWebEngine.","DNATech")
+    else
+        DEFINE MSDIALOG oDlg TITLE "DNATech · CpyF2Web Probe" FROM 0,0 TO 600,1000 PIXEL
+            oEngine:=TWebEngine():New(oDlg,0,0,1000,600,/*URL*/,oChannel:nPort)
+            oEngine:Align:=CONTROL_ALIGN_ALLCLIENT
+            oEngine:Navigate(cHTMLWeb)
+        ACTIVATE MSDIALOG oDlg CENTERED
+        FreeObj(@oEngine)
+        FreeObj(@oDlg)
+    endif
+
+    if (ValType(oChannel)=="O")
+        oChannel:Disconnect()
+        FreeObj(@oChannel)
+    endif
+    if (File(cHTMLFile))
+        fErase(cHTMLFile)
+    endif
+    if (File(cSVGFile))
+        fErase(cSVGFile)
+    endif
+
+return(nil)
+
+static function DNWProbeCB(oDlg as object,cType as character,cData as character) as logical
+    if (cType=="DNW_PROBE_RESULT")
+        ConOut("DNATECH CPYF2WEB PROBE: "+cData)
+    elseif ((cType=="DNW_PROBE_CLOSE").and.(ValType(oDlg)=="O"))
+        oDlg:End()
+    endif
+return(.T.)
+
+static function DNWJSEscape(cValue as character) as character
+    cValue:=StrTran(cValue,"\","\\")
+    cValue:=StrTran(cValue,"'","\'")
+    cValue:=StrTran(cValue,Chr(13),"\r")
+    cValue:=StrTran(cValue,Chr(10),"\n")
+return(cValue)

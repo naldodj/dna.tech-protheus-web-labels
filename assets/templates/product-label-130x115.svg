@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="130mm" height="115mm" viewBox="0 0 130 115"
+     preserveAspectRatio="xMidYMid meet"
+     data-hide-empty-fields="true">
+  <rect x="1" y="1" width="128" height="113" rx="2"
+        fill="#fff" stroke="#17232d" stroke-width="0.7"/>
+  <rect x="5" y="5" width="120" height="18" rx="1.5"
+        fill="#edf4f7" stroke="#40606f" stroke-width="0.35"/>
+  <text x="8" y="12" font-family="Arial,sans-serif" font-size="5.5" font-weight="700">
+    RÓTULO DE PRODUTO
+  </text>
+  <text id="product" x="8" y="19" font-family="Arial,sans-serif" font-size="3.8"
+        data-fit-width="112" data-fit-height="5" data-min-font-size="2" data-max-font-size="5">
+    PRODUTO DEMONSTRATIVO
+  </text>
+
+  <svg id="barcode" x="6" y="29" width="48" height="42"
+       viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"/>
+
+  <g id="data-container">
+    <rect x="58" y="29" width="66" height="42" fill="none"
+          stroke="#b4c2c9" stroke-width="0.25" stroke-dasharray="1 1"/>
+    <g font-family="Arial,sans-serif" font-size="3.4">
+      <text x="61" y="37" font-weight="700">Lote:</text>
+      <text id="batch" x="121" y="37" text-anchor="end">L000001</text>
+      <text x="61" y="45" font-weight="700">Fabricação:</text>
+      <text id="manufacture" x="121" y="45" text-anchor="end">01/09/2026</text>
+      <text x="61" y="53" font-weight="700">Validade:</text>
+      <text id="expiration" x="121" y="53" text-anchor="end">01/09/2028</text>
+      <text x="61" y="61" font-weight="700">Peso:</text>
+      <text id="weight" x="121" y="61" text-anchor="end">20,000 KG</text>
+    </g>
+  </g>
+
+  <g id="volume-species">
+    <rect x="6" y="77" width="118" height="27" rx="1.5"
+          fill="#f8fafb" stroke="#b4c2c9" stroke-width="0.3"/>
+    <text id="volume" x="65" y="90" text-anchor="middle"
+          font-family="Arial,sans-serif" font-size="10" font-weight="900" font-style="italic"
+          data-fit-width="112" data-fit-height="11" data-min-font-size="3" data-max-font-size="12">
+      20 KG
+    </text>
+    <text id="species" x="65" y="99" text-anchor="middle"
+          font-family="Arial,sans-serif" font-size="5" font-weight="900"
+          data-fit-width="112" data-fit-height="6" data-min-font-size="2" data-max-font-size="7">
+      BOMBONA
+    </text>
+  </g>
+
+  <text x="4" y="112" fill="#aeb7bc" font-family="Arial,sans-serif" font-size="1.7">
+    DNATech · SVG template example
+  </text>
+</svg>

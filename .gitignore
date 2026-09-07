@@ -1,0 +1,15 @@
+# Protheus build/runtime artifacts
+*.rpo
+*.ptm
+*.log
+*.bak
+*.tmp
+.vscode/
+
+# Generated output
+output/
+dist/
+
+# Operating systems
+Thumbs.db
+.DS_Store

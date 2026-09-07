@@ -1,0 +1,192 @@
+#include "totvs.ch"
+
+/*/{Protheus.doc} U_DNWLABEL
+
+Exemplo independente de rotulos SVG e PDF consolidado no Protheus.
+
+Publica HTML e SVG pelo CpyF2Web, carrega o template por URL relativa, ajusta
+campos variaveis, gera barcode com JsBarcode, captura cada rotulo
+sequencialmente com html2canvas e abre um unico PDF por Blob. Se o navegador
+bloquear a nova guia, realiza o download como fallback.
+
+@type User Function
+/*/
+function U_DNWLABEL()
+
+    local aResult:={.F.,""} as array
+    local cStamp:=DToS(Date())+StrTran(Time(),":","") as character
+    local cName:="dnatech_web_labels_"+cStamp as character
+    local cPath:="\system\dnatech-web-labels\" as character
+    local cHTMLFile:=cPath+cName+".html" as character
+    local cSVGFile:=cPath+cName+".svg" as character
+    local cHTMLWeb:="" as character
+    local cSVGWeb:="" as character
+    local cAssetURL:="" as character
+    local cHTML:="" as character
+    local cChannelJS:=GetApoRes("twebchannel.js") as character
+    local cBarcodeJS:=GetApoRes("JsBarCode.all.min.js") as character
+    local cCanvasJS:=GetApoRes("html2canvas.min.js") as character
+    local cPDFJS:=GetApoRes("jspdf.umd.min.js") as character
+    local oDlg as object
+    local oChannel as object
+    local oEngine as object
+
+    FWMakeDir(cPath,.F.)
+    if (Empty(cChannelJS).or.Empty(cBarcodeJS).or.Empty(cCanvasJS).or.Empty(cPDFJS))
+        MsgStop("Inclua twebchannel.js, JsBarcode, html2canvas e jsPDF no RPO.","DNATech Web Labels")
+        return(nil)
+    endif
+
+    if (!MemoWrite(cSVGFile,DNWLabelTemplate()))
+        MsgStop("Nao foi possivel gravar o template SVG.","DNATech Web Labels")
+        return(nil)
+    endif
+
+    /* Recurso primeiro; HTML hospedeiro depois. Ambos chegam ao mesmo cache Web. */
+    cSVGWeb:=CpyF2Web(cSVGFile,.F.,.F.,.F.,.F.)
+    cAssetURL:=DNWCpyRelative(cSVGWeb)
+    if (Empty(cAssetURL))
+        MsgStop("CpyF2Web nao publicou o template SVG.","DNATech Web Labels")
+        return(nil)
+    endif
+
+    BeginContent var cHTML
+<!doctype html><html><head><meta charset="windows-1252"><title>DNATech Web Labels</title>
+<script>__CHANNEL__</script><script>__BARCODE__</script><script>__CANVAS__</script><script>__PDF__</script>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial;background:#eef2f4}
+#overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#273640}
+.loader{width:66px;height:66px;border:4px solid #cad8de;border-top-color:#168eab;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}#status{margin-top:18px;font-weight:700}
+#stage{position:absolute;left:-10000px;top:0;width:130mm;height:115mm;background:#fff;overflow:hidden}
+#stage>svg{display:block;width:100%;height:100%}
+</style></head><body><div id="overlay"><div class="loader"></div><div id="status">Preparando rótulos...</div></div><div id="stage"></div>
+<script>
+const TEMPLATE_URL='__TEMPLATE_URL__';
+const LABELS=[
+ {product:'PA000001 · PRODUTO DEMONSTRATIVO',batch:'L240001',manufacture:'01/09/2026',expiration:'01/09/2028',weight:'20,000 KG',volume:'20 KG',species:'BOMBONA',gtin:'7891234567895'},
+ {product:'PA000002 · PRODUTO PARA LIMPEZA PROFUNDA',batch:'L240002',manufacture:'02/09/2026',expiration:'02/09/2028',weight:'5,000 KG',volume:'5 LITROS',species:'FRASCO PARA EXTREMA LIMPEZA',gtin:'12345678901231'},
+ {product:'',batch:'L240003',manufacture:'03/09/2026',expiration:'03/09/2028',weight:'1,000 KG',volume:'',species:'CAIXA',gtin:''}
+];
+let started=false;
+function setStatus(text){document.getElementById('status').textContent=text}
+function setText(root,id,value){const el=root.querySelector('#'+id);if(!el)return false;value=String(value||'');el.textContent=value;
+ const show=value.trim()!=='';el.style.display=show?'':'none';const label=root.querySelector('[data-label-for="'+id+'"]');if(label)label.style.display=show?'':'none';return show}
+function fitText(el){if(!el||el.style.display==='none')return;const w=+el.dataset.fitWidth,h=+el.dataset.fitHeight,min=+el.dataset.minFontSize,max=+el.dataset.maxFontSize;
+ if(!w||!h||!min||!max)return;let lo=min,hi=max,best=min;for(let i=0;i<16;i++){const size=(lo+hi)/2;el.style.fontSize=size+'px';const b=el.getBBox();if(b.width<=w&&b.height<=h){best=size;lo=size}else hi=size}el.style.fontSize=best.toFixed(2)+'px'}
+function barcode(root,item){const el=root.querySelector('#barcode');if(!el)return;if(!item.gtin){el.replaceChildren();return}
+ const geometry={};['x','y','width','height','preserveAspectRatio'].forEach(k=>geometry[k]=el.getAttribute(k));
+ const format=item.gtin.length===13?'EAN13':'CODE128';JsBarcode(el,item.gtin,{format,displayValue:true,textAlign:'center',font:'Arial',fontSize:13,
+  textMargin:1,margin:0,width:2,height:52,background:'transparent',lineColor:'#000'});
+ const w=parseFloat(el.getAttribute('width')),h=parseFloat(el.getAttribute('height')),p=2;el.removeAttribute('width');el.removeAttribute('height');
+ el.setAttribute('viewBox',[-p,-p,w+p*2,h+p*2].join(' '));Object.keys(geometry).forEach(k=>{if(geometry[k]!==null)el.setAttribute(k,geometry[k])})}
+function prepare(root,item){setText(root,'product',item.product);setText(root,'batch',item.batch);setText(root,'manufacture',item.manufacture);
+ setText(root,'expiration',item.expiration);setText(root,'weight',item.weight);const v=setText(root,'volume',item.volume),s=setText(root,'species',item.species);
+ const group=root.querySelector('#volume-species');if(group)group.style.display=(v||s)?'':'none';root.querySelectorAll('[data-fit-width]').forEach(fitText);barcode(root,item)}
+function frame(){return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))}
+async function run(){if(started)return;started=true;try{
+ const response=await fetch(TEMPLATE_URL,{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw new Error('Template SVG: HTTP '+response.status);
+ const template=await response.text();if(!/<svg[\s>]/i.test(template))throw new Error('Template SVG invalido');
+ const first=LABELS[0],pdf=new jspdf.jsPDF({orientation:'landscape',unit:'mm',format:[130,115],compress:true,putOnlyUsedFonts:true});
+ for(let i=0;i<LABELS.length;i++){setStatus('Gerando rótulo '+(i+1)+' de '+LABELS.length+'...');await frame();const stage=document.getElementById('stage');stage.innerHTML=template;
+  const svg=stage.querySelector('svg');prepare(svg,LABELS[i]);if(document.fonts&&document.fonts.ready)await document.fonts.ready;await frame();
+  const canvas=await html2canvas(stage,{backgroundColor:'#fff',scale:3,useCORS:false,allowTaint:false,logging:false,width:stage.offsetWidth,height:stage.offsetHeight});
+  if(i>0)pdf.addPage([130,115],'landscape');pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,130,115);stage.replaceChildren();await frame()}
+ const blob=pdf.output('blob');if(!blob||!blob.size)throw new Error('PDF vazio');const url=URL.createObjectURL(blob),popup=window.open(url,'_blank');
+ if(!popup){const a=document.createElement('a');a.href=url;a.download='dnatech-web-labels.pdf';a.click()}setTimeout(()=>URL.revokeObjectURL(url),60000);
+ setStatus('PDF concluído.');twebchannel.jsToAdvpl('DNW_LABEL_DONE','');
+ }catch(e){setStatus('Falha: '+e.message);twebchannel.jsToAdvpl('DNW_LABEL_ERROR',e.message||String(e))}}
+function connect(){if(!window.twebchannel)return;twebchannel.connect(run)}
+window.DNWStart=connect;window.addEventListener('load',connect);
+</script></body></html>
+    EndContent
+
+    cHTML:=StrTran(cHTML,"__CHANNEL__",cChannelJS)
+    cHTML:=StrTran(cHTML,"__BARCODE__",cBarcodeJS)
+    cHTML:=StrTran(cHTML,"__CANVAS__",cCanvasJS)
+    cHTML:=StrTran(cHTML,"__PDF__",cPDFJS)
+    cHTML:=StrTran(cHTML,"__TEMPLATE_URL__",DNWJSEscape(cAssetURL))
+    if (!MemoWrite(cHTMLFile,cHTML))
+        MsgStop("Nao foi possivel gravar o HTML.","DNATech Web Labels")
+        return(nil)
+    endif
+    cHTMLWeb:=CpyF2Web(cHTMLFile,.F.,.F.,.F.,.F.)
+
+    oChannel:=TWebChannel():New()
+    oChannel:bJSToAdvPL:={|o,cType,cData|DNWLabelCB(@oDlg,cType,cData,@aResult)}
+    oChannel:Connect()
+    if ((!oChannel:lConnected).or.(Empty(cHTMLWeb)))
+        MsgStop("Nao foi possivel iniciar TWebChannel/TWebEngine.","DNATech Web Labels")
+    else
+        DEFINE MSDIALOG oDlg TITLE "DNATech · Web Labels" FROM 0,0 TO 600,1000 PIXEL
+            oEngine:=TWebEngine():New(oDlg,0,0,1000,600,/*URL*/,oChannel:nPort)
+            oEngine:Align:=CONTROL_ALIGN_ALLCLIENT
+            oEngine:bLoadFinished:={|engine,url|engine:RunJavaScript("if(window.DNWStart){window.DNWStart();}")}
+            oEngine:Navigate(cHTMLWeb)
+        ACTIVATE MSDIALOG oDlg CENTERED
+        FreeObj(@oEngine)
+        FreeObj(@oDlg)
+    endif
+
+    if (ValType(oChannel)=="O")
+        oChannel:Disconnect()
+        FreeObj(@oChannel)
+    endif
+    if (File(cHTMLFile))
+        fErase(cHTMLFile)
+    endif
+    if (File(cSVGFile))
+        fErase(cSVGFile)
+    endif
+    if (!aResult[1].and.(!Empty(aResult[2])))
+        MsgStop(aResult[2],"DNATech Web Labels")
+    endif
+
+return(nil)
+
+static function DNWLabelCB(oDlg as object,cType as character,cData as character,aResult as array) as logical
+    if (cType=="DNW_LABEL_DONE")
+        aResult[1]:=.T.
+    elseif (cType=="DNW_LABEL_ERROR")
+        aResult[2]:=cData
+    endif
+    if ((cType$"DNW_LABEL_DONE|DNW_LABEL_ERROR").and.(ValType(oDlg)=="O"))
+        oDlg:End()
+    endif
+return(.T.)
+
+static function DNWCpyRelative(cPublished as character) as character
+    local nPos:=0 as numeric
+    cPublished:=StrTran(AllTrim(cPublished),"\","/")
+    nPos:=At("?",cPublished)
+    if (nPos>0)
+        cPublished:=Left(cPublished,nPos-1)
+    endif
+    nPos:=At("#",cPublished)
+    if (nPos>0)
+        cPublished:=Left(cPublished,nPos-1)
+    endif
+    nPos:=RAt("/",cPublished)
+return(if(Empty(cPublished),"","./"+if(nPos>0,SubStr(cPublished,nPos+1),cPublished)))
+
+static function DNWJSEscape(cValue as character) as character
+    cValue:=StrTran(cValue,"\","\\")
+    cValue:=StrTran(cValue,"'","\'")
+    cValue:=StrTran(cValue,Chr(13),"\r")
+    cValue:=StrTran(cValue,Chr(10),"\n")
+return(cValue)
+
+static function DNWLabelTemplate() as character
+    local cSVG:="" as character
+    BeginContent var cSVG
+<svg xmlns="http://www.w3.org/2000/svg" width="130mm" height="115mm" viewBox="0 0 130 115" preserveAspectRatio="xMidYMid meet" data-hide-empty-fields="true">
+<rect x="1" y="1" width="128" height="113" rx="2" fill="#fff" stroke="#17232d" stroke-width=".7"/><rect x="5" y="5" width="120" height="18" rx="1.5" fill="#edf4f7" stroke="#40606f" stroke-width=".35"/>
+<text x="8" y="12" font-family="Arial" font-size="5.5" font-weight="700">RÓTULO DE PRODUTO</text><text id="product" x="8" y="19" font-family="Arial" font-size="3.8" data-fit-width="112" data-fit-height="5" data-min-font-size="2" data-max-font-size="5">PRODUTO</text>
+<svg id="barcode" x="6" y="29" width="48" height="42" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"/>
+<g id="data-container" font-family="Arial" font-size="3.4"><rect x="58" y="29" width="66" height="42" fill="none" stroke="#b4c2c9" stroke-width=".25" stroke-dasharray="1 1"/>
+<text x="61" y="37" font-weight="700">Lote:</text><text id="batch" x="121" y="37" text-anchor="end"/><text x="61" y="45" font-weight="700">Fabricação:</text><text id="manufacture" x="121" y="45" text-anchor="end"/>
+<text x="61" y="53" font-weight="700">Validade:</text><text id="expiration" x="121" y="53" text-anchor="end"/><text x="61" y="61" font-weight="700">Peso:</text><text id="weight" x="121" y="61" text-anchor="end"/></g>
+<g id="volume-species"><rect x="6" y="77" width="118" height="27" rx="1.5" fill="#f8fafb" stroke="#b4c2c9" stroke-width=".3"/><text id="volume" x="65" y="90" text-anchor="middle" font-family="Arial" font-size="10" font-weight="900" font-style="italic" data-fit-width="112" data-fit-height="11" data-min-font-size="3" data-max-font-size="12"/>
+<text id="species" x="65" y="99" text-anchor="middle" font-family="Arial" font-size="5" font-weight="900" data-fit-width="112" data-fit-height="6" data-min-font-size="2" data-max-font-size="7"/></g><text x="4" y="112" fill="#aeb7bc" font-family="Arial" font-size="1.7">DNATech · SVG template example</text></svg>
+    EndContent
+return(cSVG)

@@ -1,5 +1,16 @@
 #include "totvs.ch"
 
+#IFNDEF BACK_SLASH
+    #define BACK_SLASH chr(92)
+#ENDIF
+
+#IFNDEF FORWARD_SLASH
+    #define FORWARD_SLASH chr(47)
+    #IFNDEF SLASH
+        #define SLASH FORWARD_SLASH
+    #ENDIF
+#ENDIF
+
 /*{Protheus.doc} U_DNWLABEL
 
 Exemplo independente de rotulos SVG e PDF consolidado no Protheus.
@@ -16,7 +27,7 @@ function U_DNWLABEL()
     local aResult:={.F.,""} as array
     local cStamp:=DToS(Date())+StrTran(Time(),":","") as character
     local cName:="dnatech_web_labels_"+cStamp as character
-    local cPath:="\system\dnatech-web-labels\" as character
+    local cPath:={"path":StrTran("\\system\\dnatech-web-labels\\","\\",BACK_SLASH)}["path"] as character
     local cHTMLFile:=cPath+cName+".html" as character
     local cSVGFile:=cPath+cName+".svg" as character
     local cHTMLWeb:="" as character
@@ -157,7 +168,7 @@ return(.T.)
 
 static function DNWCpyRelative(cPublished as character) as character
     local nPos:=0 as numeric
-    cPublished:=StrTran(AllTrim(cPublished),"\","/")
+    cPublished:=StrTran(AllTrim(cPublished),BACK_SLASH,FORWARD_SLASH)
     nPos:=At("?",cPublished)
     if (nPos>0)
         cPublished:=Left(cPublished,nPos-1)
@@ -166,14 +177,14 @@ static function DNWCpyRelative(cPublished as character) as character
     if (nPos>0)
         cPublished:=Left(cPublished,nPos-1)
     endif
-    nPos:=RAt("/",cPublished)
-return(if(Empty(cPublished),"","./"+if(nPos>0,SubStr(cPublished,nPos+1),cPublished)))
+    nPos:=RAt(FORWARD_SLASH,cPublished)
+return(if(Empty(cPublished),"","."+FORWARD_SLASH+if(nPos>0,SubStr(cPublished,nPos+1),cPublished)))
 
 static function DNWJSEscape(cValue as character) as character
-    cValue:=StrTran(cValue,"\","\\")
-    cValue:=StrTran(cValue,"'","\'")
-    cValue:=StrTran(cValue,Chr(13),"\r")
-    cValue:=StrTran(cValue,Chr(10),"\n")
+    cValue:=StrTran(cValue,BACK_SLASH,BACK_SLASH+BACK_SLASH)
+    cValue:=StrTran(cValue,"'",BACK_SLASH+"'")
+    cValue:=StrTran(cValue,Chr(13),BACK_SLASH+"r")
+    cValue:=StrTran(cValue,Chr(10),BACK_SLASH+"n")
 return(cValue)
 
 static function DNWLabelTemplate() as character

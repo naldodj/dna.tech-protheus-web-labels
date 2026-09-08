@@ -1,17 +1,28 @@
 #include "totvs.ch"
 
-/*/{Protheus.doc} U_DNWPROBE
+#IFNDEF BACK_SLASH
+    #define BACK_SLASH chr(92)
+#ENDIF
+
+#IFNDEF FORWARD_SLASH
+    #define FORWARD_SLASH chr(47)
+    #IFNDEF SLASH
+        #define SLASH FORWARD_SLASH
+    #ENDIF
+#ENDIF
+
+/*{Protheus.doc} U_DNWPROBE
 
 Diagnostica como TWebEngine resolve um recurso publicado por CpyF2Web.
 O resultado esperado e HTTP 200 somente para ./nome-do-arquivo.svg.
 
 @type User Function
-/*/
+*/
 function U_DNWPROBE()
 
     local cStamp:=DToS(Date())+StrTran(Time(),":","") as character
     local cName:="dnatech_cpyf2web_probe_"+cStamp as character
-    local cPath:="\system\dnatech-web-labels\" as character
+    local cPath:={"path":StrTran("\\system\\dnatech-web-labels\\","\\",BACK_SLASH)}["path"] as character
     local cHTMLFile:=cPath+cName+".html" as character
     local cSVGFile:=cPath+cName+".svg" as character
     local cHTMLWeb:="" as character
@@ -60,7 +71,7 @@ h1{font:700 25px Arial}.box{background:#182630;border:1px solid #37505d;border-r
 const raw='__RAW__', file='__FILE__';
 function esc(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 async function run(){
-  document.getElementById('env').innerHTML='<b>href:</b> <span class="url">'+esc(location.href)+'</span><br>'+ 
+  document.getElementById('env').innerHTML='<b>href:</b> <span class="url">'+esc(location.href)+'</span><br>'+
     '<b>baseURI:</b> <span class="url">'+esc(document.baseURI)+'</span><br><b>CpyF2Web:</b> <span class="url">'+esc(raw)+'</span>';
   const clean=new URL(document.baseURI); clean.search=''; clean.hash='';
   const tests=[['retorno bruto',raw],['resolvido pelo baseURI',new URL(raw,document.baseURI).href],
@@ -125,8 +136,8 @@ static function DNWProbeCB(oDlg as object,cType as character,cData as character)
 return(.T.)
 
 static function DNWJSEscape(cValue as character) as character
-    cValue:=StrTran(cValue,"\","\\")
-    cValue:=StrTran(cValue,"'","\'")
-    cValue:=StrTran(cValue,Chr(13),"\r")
-    cValue:=StrTran(cValue,Chr(10),"\n")
+    cValue:=StrTran(cValue,BACK_SLASH,BACK_SLASH+BACK_SLASH)
+    cValue:=StrTran(cValue,"'",BACK_SLASH+"'")
+    cValue:=StrTran(cValue,Chr(13),BACK_SLASH+"r")
+    cValue:=StrTran(cValue,Chr(10),BACK_SLASH+"n")
 return(cValue)

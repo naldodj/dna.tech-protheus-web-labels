@@ -1,6 +1,6 @@
 #include "totvs.ch"
 
-/*/{Protheus.doc} U_DNWLABEL
+/*{Protheus.doc} U_DNWLABEL
 
 Exemplo independente de rotulos SVG e PDF consolidado no Protheus.
 
@@ -10,7 +10,7 @@ sequencialmente com html2canvas e abre um unico PDF por Blob. Se o navegador
 bloquear a nova guia, realiza o download como fallback.
 
 @type User Function
-/*/
+*/
 function U_DNWLABEL()
 
     local aResult:={.F.,""} as array

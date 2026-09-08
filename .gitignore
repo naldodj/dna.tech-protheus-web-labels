@@ -5,6 +5,7 @@
 *.bak
 *.tmp
 .vscode/
+.advpl/
 
 # Generated output
 output/

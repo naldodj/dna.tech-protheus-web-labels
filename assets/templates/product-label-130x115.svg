@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="130mm" height="115mm" viewBox="0 0 130 115"
      preserveAspectRatio="xMidYMid meet"
-     data-hide-empty-fields="true">
+     data-hide-empty-fields="true" data-font-profile="1" data-volume-mode="featured">
   <rect x="1" y="1" width="128" height="113" rx="2"
         fill="#fff" stroke="#17232d" stroke-width="0.7"/>
   <rect x="5" y="5" width="120" height="18" rx="1.5"
@@ -22,28 +22,28 @@
     <rect x="58" y="29" width="66" height="42" fill="none"
           stroke="#b4c2c9" stroke-width="0.25" stroke-dasharray="1 1"/>
     <g font-family="Arial,sans-serif" font-size="3.4">
-      <text x="61" y="37" font-weight="700">Lote:</text>
-      <text id="batch" x="121" y="37" text-anchor="end">L000001</text>
-      <text x="61" y="45" font-weight="700">Fabricação:</text>
-      <text id="manufacture" x="121" y="45" text-anchor="end">01/09/2026</text>
-      <text x="61" y="53" font-weight="700">Validade:</text>
-      <text id="expiration" x="121" y="53" text-anchor="end">01/09/2028</text>
-      <text x="61" y="61" font-weight="700">Peso:</text>
-      <text id="weight" x="121" y="61" text-anchor="end">20,000 KG</text>
+      <text x="61" y="37" font-weight="700" data-label-for="batch">Lote:</text>
+      <text id="batch" x="121" y="37" text-anchor="end" data-fit-width="32" data-fit-height="5" data-min-font-size="1.5" data-max-font-size="3.4">L000001</text>
+      <text x="61" y="45" font-weight="700" data-label-for="manufacture">Fabricação:</text>
+      <text id="manufacture" x="121" y="45" text-anchor="end" data-fit-width="32" data-fit-height="5" data-min-font-size="1.5" data-max-font-size="3.4">01/09/2026</text>
+      <text x="61" y="53" font-weight="700" data-label-for="expiration">Validade:</text>
+      <text id="expiration" x="121" y="53" text-anchor="end" data-fit-width="32" data-fit-height="5" data-min-font-size="1.5" data-max-font-size="3.4">01/09/2028</text>
+      <text x="61" y="61" font-weight="700" data-label-for="weight">Peso:</text>
+      <text id="weight" x="121" y="61" text-anchor="end" data-fit-width="32" data-fit-height="5" data-min-font-size="1.5" data-max-font-size="3.4">20,000 KG</text>
     </g>
   </g>
 
-  <g id="volume-species">
+  <g id="volume-species" data-volume-gap="0.57" data-volume-align="center" data-species-use-volume-font="true">
     <rect x="6" y="77" width="118" height="27" rx="1.5"
           fill="#f8fafb" stroke="#b4c2c9" stroke-width="0.3"/>
     <text id="volume" x="65" y="90" text-anchor="middle"
-          font-family="Arial,sans-serif" font-size="10" font-weight="900" font-style="italic"
-          data-fit-width="112" data-fit-height="11" data-min-font-size="3" data-max-font-size="12">
+          font-family="Arial,sans-serif" font-size="10.818519" font-weight="900" font-style="italic"
+          data-fit-width="112" data-fit-height="16.227778" data-min-font-size="14" data-max-font-size="23" data-font-unit="raster" data-font-scale-x="0.945" dominant-baseline="alphabetic">
       20 KG
     </text>
     <text id="species" x="65" y="99" text-anchor="middle"
-          font-family="Arial,sans-serif" font-size="5" font-weight="900"
-          data-fit-width="112" data-fit-height="6" data-min-font-size="2" data-max-font-size="7">
+          font-family="Arial,sans-serif" font-size="7.055556" font-weight="900"
+          data-fit-width="112" data-fit-height="10.583333" data-min-font-size="5" data-max-font-size="15" data-font-unit="raster" data-font-scale-x="0.945" dominant-baseline="alphabetic">
       BOMBONA
     </text>
   </g>

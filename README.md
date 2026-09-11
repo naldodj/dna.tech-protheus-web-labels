@@ -87,6 +87,8 @@ docs/SVG_TEMPLATE_CONTRACT.md               contrato dos IDs e propriedades
 resources/README.md                         dependências que devem estar no RPO
 src/DNATechWebLabelsDemo.tlpp               geração do PDF consolidado
 src/DNATechCpyF2WebProbe.tlpp               diagnóstico de URLs do CpyF2Web
+tools/sync-template.js                     sincronização do template embutido
+tests/svg-layout.test.js                   validação no Chromium, sem ERP
 ```
 
 ## Pré-requisitos
@@ -127,9 +129,14 @@ Pontos importantes:
 
 - template SVG como proprietário do layout;
 - campos opcionais por ID;
-- volume e espécie tratados independentemente;
+- faixas de fonte de volume e espécie compatíveis com o perfil raster de referência;
+- unidades de fonte `svg`, `pt` ou `raster`, com conversão explícita;
+- vão visual de volume/espécie configurável em milímetros e alinhamento vertical;
+- espécie isolada com herança opcional da faixa de fonte do volume;
 - ocultação de grupos sem conteúdo;
-- redução automática de fonte por largura e altura;
+- redução automática por largura e altura, com mínimo preferencial e diagnóstico;
+- contenção de volume/espécie e dados pela caixa guia do template;
+- erros com rótulo, produto, template, campo, valor inválido e orientação;
 - EAN-13 e Code 128;
 - preservação de `x`, `y`, `width`, `height` e `preserveAspectRatio` do barcode;
 - espera por fontes e ciclos de pintura do Chromium;
@@ -157,6 +164,52 @@ Para novos modelos:
 
 Consulte [o contrato completo do SVG](docs/SVG_TEMPLATE_CONTRACT.md).
 
+## Manutenção do template e equivalência com raster
+
+O modelo de 130 × 115 mm usa o perfil de referência 1: volume de 14 a 23 e
+espécie de 5 a 15, em unidades históricas do raster. A função
+`createSVGLabelLayout(root, templateName, rasterFontFactor = 4 / 3)` converte
+esses valores para a geometria do SVG. A largura dos glifos usa fator `0.945`,
+e o vão visual entre volume e espécie é `0.57` mm. O ajuste considera o texto
+real, carrega as fontes antes da medição e reposiciona o bloco dentro da caixa.
+
+O template não consulta a tabela de fontes do ERP: as faixas estão nos
+atributos de cada campo. Ao adaptar outro perfil, copie seus limites e confira
+a conversão, a caixa e a fonte utilizada. O [guia de manutenção](docs/SVG_TEMPLATE_CONTRACT.md)
+explica as unidades, os atributos, as mensagens de erro e a homologação.
+
+O SVG externo e o bloco embutido em `DNWLabelTemplate()` devem permanecer
+idênticos. A demonstração gera o arquivo publicado a partir do bloco TLPP;
+editar somente `assets/templates/product-label-130x115.svg` não altera a
+execução no Protheus. Depois de editar o SVG, sincronize e recompile o fonte:
+
+```powershell
+node tools/sync-template.js
+```
+
+## Validação local
+
+O teste executa o JavaScript do fonte e o template em Chromium, sem ERP e sem
+compilar TLPP. Forneça uma pasta com `JsBarcode.all.min.js`,
+`html2canvas.min.js` e `jspdf.umd.min.js`; as bibliotecas não são distribuídas
+pelo repositório.
+
+```powershell
+node tests/svg-layout.test.js --libs "C:/caminho/bibliotecas"
+```
+
+Para indicar o navegador ou validar também a implementação do exemplo 034:
+
+```powershell
+node tests/svg-layout.test.js --libs "C:/caminho/bibliotecas" --browser "C:/caminho/chrome.exe" --fw-source "C:/caminho/fw.webex.example.034.tlpp"
+```
+
+A validação cobre ajuste de fontes, conteúdo extenso ou vazio, espaçamento,
+contenção, erros de configuração e geração efetiva de um PDF de três páginas
+com as bibliotecas informadas. Consulte o resultado da execução para confirmar
+quais verificações passaram. A compilação no Protheus e a impressão física
+continuam necessárias para homologar uma implantação.
+
 ## Segurança e operação
 
 - Os arquivos publicados são temporários e não devem conter segredos.
@@ -171,7 +224,8 @@ Consulte [o contrato completo do SVG](docs/SVG_TEMPLATE_CONTRACT.md).
 
 - Os dados são demonstrativos e não acessam tabelas Protheus.
 - O template também está embutido no fonte para facilitar a primeira execução;
-  o arquivo em `assets/templates` é a versão editável de referência.
+  alterações na versão editável de `assets/templates` exigem sincronização do
+  bloco embutido e recompilação do TLPP.
 - Bibliotecas de terceiros não são distribuídas neste repositório.
 - Impressoras, margens físicas e calibração do equipamento não fazem parte da
   geração do PDF e devem ser homologadas separadamente.
